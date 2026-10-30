@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Camino de Paula</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Nunito:wght@400;600;800&display=swap">
+<style>
+/* Layout: una columna tipo "camino" — fila de cinco piedras-letra arriba, la estación activa en una tarjeta, final con el acróstico completo */
+:root{
+  --bg:#fff0f5; --bg2:#ffd9e6; --ink:#5a1f3a; --muted:#9b5577;
+  --pink:#ff5c93; --pink-deep:#d6336c; --card:#ffffff; --line:#f7b7cf;
+  --display:"Caprasimo", "Georgia", serif;
+  --body:"Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  margin:0; font-family:var(--body); color:var(--ink);
+  background:radial-gradient(circle at 15% 10%, var(--bg2) 0, transparent 45%),
+             radial-gradient(circle at 90% 85%, var(--bg2) 0, transparent 40%), var(--bg);
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  padding-block:24px 48px;
+}
+.wrap{max-width:560px; margin:0 auto; display:flex; flex-direction:column; gap:22px}
+header{text-align:center; display:flex; flex-direction:column; gap:6px}
+.date{font-size:.8rem; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); font-weight:800}
+h1{font-family:var(--display); font-weight:400; font-size:clamp(2.2rem,9vw,3.4rem); line-height:1; margin:0; color:var(--pink-deep); text-wrap:balance}
+.sub{margin:0; color:var(--muted)}
+
+/* camino */
+.path{position:relative; display:flex; justify-content:space-between; align-items:center; padding:8px 4px}
+.path::before{content:""; position:absolute; left:28px; right:28px; top:50%; border-top:3px dashed var(--line); z-index:0}
+.stone{position:relative; z-index:1; width:52px; height:52px; border-radius:50%;
+  display:grid; place-items:center; font-family:var(--display); font-size:1.5rem;
+  background:var(--card); color:var(--line); border:3px solid var(--line); transition:.35s}
+.stone.now{border-color:var(--pink); color:var(--pink); transform:scale(1.12); box-shadow:0 0 0 6px rgba(255,92,147,.18)}
+.stone.done{background:var(--pink); border-color:var(--pink); color:#fff}
+
+.card{background:var(--card); border-radius:22px; padding:24px 20px; box-shadow:0 12px 30px -14px rgba(214,51,108,.45);
+  display:flex; flex-direction:column; gap:14px; text-align:center; min-height:330px}
+.step{font-size:.75rem; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); font-weight:800}
+.card h2{font-family:var(--display); font-weight:400; font-size:1.6rem; margin:0; color:var(--pink-deep); text-wrap:balance}
+.card p{margin:0; line-height:1.5}
+.zone{position:relative; flex:1; min-height:180px; border-radius:16px; background:var(--bg); overflow:hidden; display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:12px; padding:14px}
+button{font:inherit; cursor:pointer}
+.btn{background:var(--pink); color:#fff; border:0; border-radius:999px; padding:12px 22px; font-weight:800; font-size:1rem}
+.btn:hover{background:var(--pink-deep)}
+button:focus-visible{outline:3px solid var(--pink-deep); outline-offset:3px}
+.opt{background:var(--card); color:var(--ink); border:2px solid var(--line); border-radius:14px; padding:12px 14px; font-weight:600; width:100%}
+.opt.bad{border-color:#e5a3b9; color:var(--muted); animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.heart{position:absolute; border:0; background:none; font-size:2.1rem; line-height:1; padding:6px; animation:float 3.2s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-10px) rotate(-6deg)}}
+.candle{border:0; background:none; display:flex; flex-direction:column; align-items:center; padding:4px}
+.flame{width:16px; height:24px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%; background:linear-gradient(#ffd166,#ff8a3d); animation:flick .4s infinite alternate}
+.candle.off .flame{visibility:hidden}
+.stick{width:16px; height:58px; border-radius:4px; background:repeating-linear-gradient(45deg,var(--pink) 0 8px,#ffc2d6 8px 16px)}
+@keyframes flick{to{transform:scale(1.1,.9)}}
+.cake{width:100%; text-align:center; font-size:.85rem; color:var(--muted)}
+.meter{width:100%; height:20px; border-radius:999px; background:var(--card); border:2px solid var(--line); overflow:hidden}
+.meter i{display:block; height:100%; width:0; background:linear-gradient(90deg,#ff9ebf,var(--pink))}
+.hold{user-select:none; -webkit-user-select:none; touch-action:none}
+.tile{width:48px; height:48px; border-radius:12px; border:2px solid var(--line); background:var(--card); font-family:var(--display); font-size:1.4rem; color:var(--pink-deep)}
+.tile.used{visibility:hidden}
+.answer{width:100%; display:flex; justify-content:center; gap:8px; min-height:52px}
+.answer span{width:44px; height:48px; border-bottom:3px solid var(--line); font-family:var(--display); font-size:1.5rem; color:var(--pink-deep); display:grid; place-items:center}
+.reveal{font-size:1.05rem; color:var(--pink-deep); font-weight:600}
+.reveal b{font-family:var(--display); font-weight:400; font-size:1.5rem}
+
+/* acróstico armado */
+.poem{display:flex; flex-direction:column; gap:10px; text-align:left}
+.line{display:flex; gap:12px; align-items:baseline; opacity:.25; transition:opacity .5s}
+.line.on{opacity:1}
+.line b{font-family:var(--display); font-weight:400; font-size:2rem; color:var(--pink); width:30px; flex:none; text-align:center}
+.line span{line-height:1.45; min-width:0}
+.final h2{font-size:2rem}
+.sign{text-align:right; font-family:var(--display); color:var(--pink-deep); font-size:1.2rem}
+canvas#fx{position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:20}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+</head>
+<body>
+
+<canvas id="fx"></canvas>
+<div class="wrap">
+  <header>
+    <span class="date">30 · 10 · 2026</span>
+    <h1>Feliz cumpleaños, Paula</h1>
+    <p class="sub">Recorre el camino. Cada parada guarda una letra de tu nombre.</p>
+  </header>
+
+  <div class="path" id="path" aria-label="Progreso del camino"></div>
+
+  <section class="card" id="card" aria-live="polite"></section>
+
+  <section class="card" aria-label="Acróstico">
+    <div class="step">Tu acróstico</div>
+    <div class="poem" id="poem"></div>
+  </section>
+</div>
+
+<script>
+const NAME = ["P","A","U","L","A"];
+const LINES = [
+  "Por cada sonrisa tuya que ilumina mis días,",
+  "Amo la forma en que haces todo más bonito,",
+  "Única en el mundo, mi persona favorita,",
+  "Llenas mi vida de amor y de calma,",
+  "Así que hoy celebro que existas. ¡Feliz cumpleaños!"
+];
+let stage = 0;
+const card = document.getElementById("card");
+const pathEl = document.getElementById("path");
+const poem = document.getElementById("poem");
+
+NAME.forEach((l,i)=>{
+  const s=document.createElement("div"); s.className="stone"; s.textContent=l; pathEl.appendChild(s);
+  const ln=document.createElement("div"); ln.className="line"; ln.innerHTML=`<b>${l}</b><span>${LINES[i]}</span>`; poem.appendChild(ln);
+});
+function paint(){
+  [...pathEl.children].forEach((s,i)=>{s.className="stone"+(i<stage?" done":i===stage?" now":"")});
+  [...poem.children].forEach((l,i)=>l.classList.toggle("on",i<stage));
+}
+
+function win(){
+  burst(60);
+  const i=stage;
+  card.innerHTML=`<div class="step">Parada ${i+1} de 5</div>
+    <h2>¡Ganaste la letra ${NAME[i]}!</h2>
+    <p class="reveal"><b>${NAME[i]}</b> — ${LINES[i]}</p>
+    <div style="flex:1"></div>
+    <div><button class="btn" id="next">${i<4?"Seguir el camino":"Ver tu sorpresa"}</button></div>`;
+  stage++; paint();
+  document.getElementById("next").onclick = stage<5 ? games[stage] : finale;
+}
+function shell(title,text){
+  card.innerHTML=`<div class="step">Parada ${stage+1} de 5</div><h2>${title}</h2><p>${text}</p><div class="zone" id="zone"></div>`;
+  return document.getElementById("zone");
+}
+
+/* 1 · atrapar corazones */
+function g1(){
+  const z=shell("Atrapa los corazones","Toca los 5 corazones que andan flotando.");
+  let left=5;
+  for(let k=0;k<5;k++){
+    const h=document.createElement("button"); h.className="heart"; h.textContent="💗"; h.setAttribute("aria-label","Corazón");
+    h.style.left=(8+Math.random()*72)+"%"; h.style.top=(8+Math.random()*62)+"%"; h.style.animationDelay=(k*.4)+"s";
+    h.onclick=()=>{h.remove(); burst(8); if(--left===0) setTimeout(win,250)};
+    z.appendChild(h);
+  }
+}
+/* 2 · pregunta */
+function g2(){
+  const z=shell("Pregunta fácil","¿Quién es la persona más especial del mundo para mí?");
+  z.style.flexDirection="column";
+  [["Mi gato imaginario",0],["Tú, obviamente",1],["La señora del pan",0]].forEach(([t,ok])=>{
+    const b=document.createElement("button"); b.className="opt"; b.textContent=t;
+    b.onclick=()=>{ if(ok) win(); else { b.classList.remove("bad"); void b.offsetWidth; b.classList.add("bad"); b.textContent="Mmm… intenta otra 😏"; } };
+    z.appendChild(b);
+  });
+}
+/* 3 · velitas */
+function g3(){
+  const z=shell("Apaga las velitas","Toca cada vela para soplarla y pide un deseo.");
+  let left=3;
+  for(let k=0;k<3;k++){
+    const c=document.createElement("button"); c.className="candle"; c.setAttribute("aria-label","Vela encendida");
+    c.innerHTML='<div class="flame"></div><div class="stick"></div>';
+    c.onclick=()=>{ if(c.classList.contains("off"))return; c.classList.add("off"); burst(10); if(--left===0) setTimeout(win,400) };
+    z.appendChild(c);
+  }
+  const t=document.createElement("div"); t.className="cake"; t.textContent="🎂 Pide tu deseo en silencio"; z.appendChild(t);
+}
+/* 4 · mantener presionado */
+function g4(){
+  const z=shell("Llena el medidor de amor","Mantén presionado el botón hasta que se llene.");
+  z.style.flexDirection="column";
+  z.innerHTML='<div class="meter"><i id="bar"></i></div><button class="btn hold" id="hold">Mantén presionado 💞</button>';
+  let v=0, timer=null; const bar=document.getElementById("bar"), b=document.getElementById("hold");
+  const start=e=>{e.preventDefault(); if(timer)return; timer=setInterval(()=>{v=Math.min(100,v+2.5); bar.style.width=v+"%"; if(v>=100){stop(); win();}},40)};
+  const stop=()=>{clearInterval(timer); timer=null};
+  b.addEventListener("pointerdown",start); ["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,stop));
+  b.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter")start(e)}); b.addEventListener("keyup",stop);
+}
+/* 5 · ordenar el nombre */
+function g5(){
+  const z=shell("Arma tu nombre","Toca las letras en orden para escribir tu nombre.");
+  const ans=document.createElement("div"); ans.className="answer";
+  NAME.forEach(()=>ans.appendChild(document.createElement("span")));
+  z.appendChild(ans);
+  let pos=0; const order=[3,0,4,1,2];
+  order.forEach(i=>{
+    const t=document.createElement("button"); t.className="tile"; t.textContent=NAME[i];
+    t.onclick=()=>{
+      if(t.textContent===NAME[pos]){ ans.children[pos].textContent=t.textContent; t.classList.add("used"); pos++; if(pos===5) setTimeout(win,300); }
+      else { t.animate([{transform:"translateX(-5px)"},{transform:"translateX(5px)"},{transform:"none"}],{duration:300}); }
+    };
+    z.appendChild(t);
+  });
+}
+const games=[g1,g2,g3,g4,g5];
+
+function finale(){
+  burst(160);
+  card.classList.add("final");
+  card.innerHTML=`<div class="step">Llegaste al final del camino</div>
+    <h2>¡Feliz cumpleaños, mi amor!</h2>
+    <p>Gracias por existir y por dejarme caminar a tu lado. Que este año te devuelva todo lo bonito que tú das.</p>
+    <div class="poem">${NAME.map((l,i)=>`<div class="line on"><b>${l}</b><span>${LINES[i]}</span></div>`).join("")}</div>
+    <p class="sign">Con amor, Felipe</p>
+    <div><button class="btn" id="again">Más confeti 🎉</button></div>`;
+  document.getElementById("again").onclick=()=>burst(120);
+}
+
+function intro(){
+  card.innerHTML=`<div class="step">Antes de empezar</div>
+    <h2>Un camino hecho para ti</h2>
+    <p>Son cinco paradas con juegos cortitos. En cada una ganas una letra, y al final se arma algo que escribí pensando en ti.</p>
+    <div class="zone" style="font-size:3.4rem">🎁</div>
+    <div><button class="btn" id="go">Empezar el camino</button></div>`;
+  document.getElementById("go").onclick=g1;
+}
+
+/* confeti */
+const cv=document.getElementById("fx"), cx=cv.getContext("2d"); let parts=[], raf=null;
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function size(){cv.width=innerWidth*devicePixelRatio; cv.height=innerHeight*devicePixelRatio; cx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+addEventListener("resize",size); size();
+function burst(n){
+  if(reduce)return;
+  const cols=["#ff5c93","#ffb3cc","#d6336c","#ffd166","#ffffff"];
+  for(let i=0;i<n;i++) parts.push({x:innerWidth/2+(Math.random()-.5)*120,y:innerHeight*.45,vx:(Math.random()-.5)*12,vy:-Math.random()*13-3,
+    s:4+Math.random()*6,c:cols[i%cols.length],r:Math.random()*6,vr:(Math.random()-.5)*.3,heart:Math.random()<.3,life:0});
+  if(!raf) raf=requestAnimationFrame(tick);
+}
+function tick(){
+  cx.clearRect(0,0,innerWidth,innerHeight);
+  parts=parts.filter(p=>p.y<innerHeight+30&&p.life<260);
+  parts.forEach(p=>{
+    p.vy+=.32; p.vx*=.99; p.x+=p.vx; p.y+=p.vy; p.r+=p.vr; p.life++;
+    cx.save(); cx.translate(p.x,p.y); cx.rotate(p.r); cx.fillStyle=p.c;
+    if(p.heart){cx.font=(p.s*2.4)+"px serif"; cx.fillText("♥",0,0)} else cx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);
+    cx.restore();
+  });
+  raf = parts.length ? requestAnimationFrame(tick) : null;
+}
+
+paint(); intro();
+</script>
+</body>
+</html>
