@@ -26,7 +26,16 @@ body{
   padding-right:max(16px, env(safe-area-inset-right,0px));
   padding-block:24px 48px;
 }
-.wrap{max-width:560px; margin:0 auto; display:flex; flex-direction:column; gap:22px}
+.wrap{position:relative; z-index:1; max-width:560px; margin:0 auto; display:flex; flex-direction:column; gap:22px}
+
+/* fondo: collage de polaroids teñido de rosa, con un velo encima para que se lea el texto */
+.photos{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none}
+.photos .grid{position:absolute; inset:-25%; display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:18px;
+  transform:rotate(-8deg); filter:grayscale(1) sepia(1) hue-rotate(295deg) saturate(2.4) brightness(1.04)}
+.pol{background:#fff; padding:6px 6px 22px; border-radius:4px; box-shadow:0 6px 14px -6px rgba(90,31,58,.5)}
+.pol img{display:block; width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:2px}
+.photos::after{content:""; position:absolute; inset:0; background:rgba(255,240,245,.62)}
+header h1, header .sub, header .date{text-shadow:0 0 12px #fff, 0 0 4px #fff}
 header{text-align:center; display:flex; flex-direction:column; gap:6px}
 .date{font-size:.8rem; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); font-weight:800}
 h1{font-family:var(--display); font-weight:400; font-size:clamp(2.2rem,9vw,3.4rem); line-height:1; margin:0; color:var(--pink-deep); text-wrap:balance}
@@ -87,11 +96,12 @@ canvas#fx{position:fixed; inset:0; width:100%; height:100%; pointer-events:none;
 <body>
 
 <canvas id="fx"></canvas>
+<div class="photos" aria-hidden="true"><div class="grid" id="grid"></div></div>
 <div class="wrap">
   <header>
     <span class="date">30 · 10 · 2026</span>
     <h1>Feliz cumpleaños, Mon Amour</h1>
-    <p class="sub">Por qué nos limitamos a simples mensajes? Cuando hay miles de posibilidades para desmostrarnos nuestro amor.</p>
+    <p class="sub">¿Por qué nos limitamos a simples mensajes? Cuando hay miles de posibilidades para demostrarnos nuestro amor.</p>
   </header>
 
   <div class="path" id="path" aria-label="Progreso del camino"></div>
@@ -113,7 +123,22 @@ const LINES = [
   "Llenas mi vida de amor y de calma,",
   "Así que hoy celebro que existas. ¡Feliz cumpleaños!"
 ];
+const FOTOS = Array.from({length:15},(_,i)=>`fondo/foto${String(i+1).padStart(2,"0")}.jpg`);
 let stage = 0;
+
+/* fondo: llena la pantalla de polaroids en orden aleatorio, cada una un poquito chueca */
+{
+  const grid=document.getElementById("grid");
+  const big=Math.max(screen.width,screen.height,innerWidth,innerHeight)*1.6;
+  const n=Math.ceil(big/148)*Math.ceil(big/200);
+  const mix=[...FOTOS].sort(()=>Math.random()-.5);
+  for(let k=0;k<n;k++){
+    const p=document.createElement("div"); p.className="pol";
+    p.style.transform=`rotate(${(Math.random()*10-5).toFixed(1)}deg)`;
+    p.innerHTML=`<img src="${mix[k%mix.length]}" alt="">`;
+    grid.appendChild(p);
+  }
+}
 const card = document.getElementById("card");
 const pathEl = document.getElementById("path");
 const poem = document.getElementById("poem");
