@@ -62,6 +62,7 @@ button{font:inherit; cursor:pointer}
 button:focus-visible{outline:3px solid var(--pink-deep); outline-offset:3px}
 .opt{background:var(--card); color:var(--ink); border:2px solid var(--line); border-radius:14px; padding:12px 14px; font-weight:600; width:100%}
 .opt.bad{border-color:#e5a3b9; color:var(--muted); animation:shake .35s}
+.opt.good{border-color:var(--pink); background:#ffe3ee; color:var(--pink-deep); font-weight:800}
 @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .bigheart{position:fixed; z-index:15; border:0; background:none; padding:0; line-height:0;
   animation:appear .35s ease-out, float 3.2s ease-in-out .35s infinite; filter:drop-shadow(0 10px 16px rgba(90,31,58,.35))}
@@ -69,13 +70,26 @@ button:focus-visible{outline:3px solid var(--pink-deep); outline-offset:3px}
 @keyframes float{50%{transform:translateY(-10px) rotate(-6deg)}}
 @keyframes appear{from{transform:scale(0); opacity:0}}
 .count{font-family:var(--display); font-size:2.6rem; color:var(--pink)}
-.note{font-size:1.1rem; font-weight:600; color:var(--pink-deep); min-height:3em; animation:appear .4s ease-out}
+.note{width:100%; margin:0; display:grid; place-items:center; text-align:center; min-height:2.6em;
+  font-family:var(--display); font-size:2rem; line-height:1.2; color:var(--pink-deep); text-wrap:balance; animation:appear .4s ease-out}
+.debug{display:flex; justify-content:center; gap:8px; flex-wrap:wrap}
+.skip{background:none; border:2px dashed var(--muted); color:var(--muted); border-radius:999px; padding:6px 14px; font-weight:800; font-size:.85rem}
 .candle{border:0; background:none; display:flex; flex-direction:column; align-items:center; padding:4px}
-.flame{width:16px; height:24px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%; background:linear-gradient(#ffd166,#ff8a3d); animation:flick .4s infinite alternate}
+.flame{width:14px; height:22px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%; background:linear-gradient(#ffd166,#ff8a3d); animation:flick .4s infinite alternate}
 .candle.off .flame{visibility:hidden}
-.stick{width:16px; height:58px; border-radius:4px; background:repeating-linear-gradient(45deg,var(--pink) 0 8px,#ffc2d6 8px 16px)}
+.stick{width:14px; height:46px; border-radius:4px; background:repeating-linear-gradient(45deg,var(--pink) 0 8px,#ffc2d6 8px 16px)}
+.timer{width:100%; text-align:center; font-family:var(--display); font-size:2.6rem; line-height:1.1; color:var(--pink-deep); font-variant-numeric:tabular-nums}
+.timer.late{font-size:1.5rem; color:#e8590c}
+
+/* fuego del juego de las velas */
+canvas#fire{position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:0}
+.scorch{position:fixed; inset:0; pointer-events:none; z-index:14; opacity:0;
+  background:radial-gradient(ellipse at center, transparent 45%, rgba(255,110,20,.25) 75%, rgba(200,40,0,.55) 100%);
+  animation:glow .25s infinite alternate}
+@keyframes glow{to{filter:brightness(1.25)}}
+.card.onfire{box-shadow:0 0 0 3px #ff8a3d, 0 0 50px 10px rgba(255,90,0,.6); animation:tremble .12s infinite}
+@keyframes tremble{25%{transform:translate(-1px,1px)}75%{transform:translate(1px,-1px)}}
 @keyframes flick{to{transform:scale(1.1,.9)}}
-.cake{width:100%; text-align:center; font-size:.85rem; color:var(--muted)}
 .meter{width:100%; height:20px; border-radius:999px; background:var(--card); border:2px solid var(--line); overflow:hidden}
 .meter i{display:block; height:100%; width:0; background:linear-gradient(90deg,#ff9ebf,var(--pink))}
 .hold{user-select:none; -webkit-user-select:none; touch-action:none}
@@ -98,7 +112,6 @@ canvas#fx{position:fixed; inset:0; width:100%; height:100%; pointer-events:none;
 .mute{position:fixed; top:max(12px, env(safe-area-inset-top,0px)); right:max(12px, env(safe-area-inset-right,0px)); z-index:30;
   width:44px; height:44px; border-radius:50%; border:2px solid var(--line); background:var(--card); font-size:1.2rem; line-height:1;
   box-shadow:0 6px 14px -6px rgba(214,51,108,.5)}
-@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
 </style>
 </head>
 <body>
@@ -106,6 +119,8 @@ canvas#fx{position:fixed; inset:0; width:100%; height:100%; pointer-events:none;
 <canvas id="fx"></canvas>
 <button class="mute" id="mute" aria-label="Silenciar sonidos">🔊</button>
 <div class="photos" aria-hidden="true"><div class="grid" id="grid"></div></div>
+<canvas id="fire" aria-hidden="true"></canvas>
+<div class="scorch" id="scorch" aria-hidden="true"></div>
 <div class="wrap">
   <header>
     <span class="date">30 · 10 · 2026</span>
@@ -122,8 +137,8 @@ canvas#fx{position:fixed; inset:0; width:100%; height:100%; pointer-events:none;
 const NAME = ["P","A","U","L","A"];
 const LINES = [
   "Por cada uno de los días que he podido compartir a tu lado, por todas esas tardes, noches y mañanas que hemos compartido juntos, por todas esas salidas inesperadas y aunque por mas planeadas que fueran nunca terminaban como esperabamos, por cada uno de los restaurantes a los que nos fuimos de gorditos a comer así sea un heladito, por todos esos dias que espero nunca tengan un fin.",
-  "Amo la forma en que haces todo más bonito,",
-  "Única en el mundo, mi persona favorita,",
+  "Amo el poder tener a alguien tan unica y inigualable persona en mi vida, amo poder decir que eres la unica persona con la que realmente quiero estar para el resto de la eternidad, amo poder imaginarte como lo que alguna vez soñe tener en mi vida, amo que la reciprocidad y el cariño mutuo que nos tenemos nos permita seguir luchando por esta relación todos los días,",
+  "Una persona tan inteligente, tan responsable, tan increiblemente maravillosa, una persona a la que le confiaria toda mi vida, por que si se de alguien que a pesar de las adversidades, sabe perfectamente sobrellevar todas las situaciones negativas en su vida, eres tu, una mujer, una chica, una amiga, una novia, una confidente, una amante, una persona con la que no existe el mas minimo ápice de duda que amo con toda el alma,",
   "Llenas mi vida de amor y de calma,",
   "Así que hoy celebro que existas. ¡Feliz cumpleaños!"
 ];
@@ -190,18 +205,29 @@ function win(){
   stage++; paint();
   document.getElementById("next").onclick = ()=>{ sfx.tick(); (stage<5 ? games[stage] : finale)(); };
 }
+/* 🧪 Botones de prueba para saltar juegos. Antes de mandárselo a Paula, cambia esto a false */
+const DEBUG = true;
+
 function shell(title,text){
-  card.innerHTML=`<div class="step">Parada ${stage+1} de 5</div><h2>${title}</h2><p>${text}</p><div class="zone" id="zone"></div>`;
+  card.innerHTML=`<div class="step">Parada ${stage+1} de 5</div><h2>${title}</h2><p>${text}</p><div class="zone" id="zone"></div>
+    ${DEBUG?'<div class="debug" id="debug"><button class="skip" id="skip">⏭ Saltar juego</button></div>':""}`;
+  if(DEBUG) document.getElementById("skip").onclick=()=>{ document.querySelectorAll(".bigheart").forEach(h=>h.remove()); win() };
   return document.getElementById("zone");
 }
 
 /* 1 · 22 corazones, uno por cada año: salen de uno en uno por toda la pantalla, cada vez más grandes y de otro color */
 function g1(){
-  const z=shell("A que no adivinas cuantos corazones hay en esta sección","Trata de reventear todos los corazones y veras diferentes maneras en las que me podria dirigir a ti.");
+  const z=shell("¿A que no adivinas cuántos corazones hay en esta sección?","Trata de reventar todos los corazones y verás diferentes maneras en las que me podría dirigir a ti.");
   z.style.flexDirection="column";
-  z.innerHTML='<div class="count" id="count">0 / 22</div><p class="note" id="note">Lograras encontrar cada uno?</p>';
+  z.innerHTML='<div class="count" id="count">0 / 22</div><p class="note" id="note">¿Lograrás encontrar cada uno?</p>';
   let k=0;
+  if(DEBUG){
+    const b=document.createElement("button"); b.className="skip"; b.textContent="💗 Siguiente corazón";
+    b.onclick=()=>document.querySelector(".bigheart")?.click();
+    document.getElementById("debug").appendChild(b);
+  }
   const next=()=>{
+    if(!document.getElementById("count")) return; // ya se saltó el juego
     const s=Math.min(36+k*10, innerHeight*.6), h=document.createElement("button");
     /* busca un lugar que no tape la tarjeta (donde sale el comentario); si no cabe en 40 intentos, se queda con el último */
     const c=card.getBoundingClientRect(); let x, y;
@@ -216,33 +242,64 @@ function g1(){
       burst(12+k*2, r.left+r.width/2, r.top+r.height/2); sfx.heart(k);
       document.getElementById("count").textContent=`${k+1} / 22`;
       const n=document.getElementById("note"); n.textContent=NOTAS[k]; n.style.animation="none"; void n.offsetWidth; n.style.animation="";
-      if(++k===22) setTimeout(win,2000); else setTimeout(next,400);
+      if(++k===22) setTimeout(()=>document.getElementById("count")&&win(),2000); else setTimeout(next,400);
     };
     document.body.appendChild(h);
   };
   next();
 }
-/* 2 · pregunta */
-function g2(){
-  const z=shell("Pregunta fácil","¿Quién es la persona más especial del mundo para mí?");
+/* 2 · tres preguntas seguidas: [título, pregunta, nota, opciones [texto, correcta]] */
+const PREGUNTAS = [
+  ["Pregunta difícil", "¿Cuál es la diferencia de días entre mi día de cumpleaños y el tuyo?", "(No tienes permitido buscar en Google)",
+    [["65",0],["66",1],["67",0]]],
+  ["Pregunta normal", "¿Cómo se llamaría alguno de nuestros animales en el futuro?", "",
+    [["Aureliano / Génesis",1],["Ariel / Ricardo",0],["Firulais / Perro Watón",0]]],
+  ["Pregunta fácil", "¿Cuánto crees que te amo?", "",
+    [["Un 100%",0],["1.000.000 sobre 100",0],["La cantidad de decimales de pi",1]]]
+];
+function g2(q=0){
+  const [title,text,hint,opts]=PREGUNTAS[q];
+  const z=shell(`${title} · ${q+1} de 3`, text+(hint?`<br><small>${hint}</small>`:""));
   z.style.flexDirection="column";
-  [["Mi gato imaginario",0],["Tú, obviamente",1],["La señora del pan",0]].forEach(([t,ok])=>{
+  opts.forEach(([t,ok])=>{
     const b=document.createElement("button"); b.className="opt"; b.textContent=t;
-    b.onclick=()=>{ if(ok) win(); else { sfx.bad(); b.classList.remove("bad"); void b.offsetWidth; b.classList.add("bad"); b.textContent="Mmm… intenta otra 😏"; } };
+    b.onclick=()=>{
+      if(ok){
+        if(z.dataset.done) return; z.dataset.done=1;
+        b.classList.add("good"); b.textContent="✓ "+t;
+        if(q===2) setTimeout(win,500); else { sfx.right(); burst(25); setTimeout(()=>g2(q+1),900); }
+      } else { sfx.bad(); b.classList.remove("bad"); void b.offsetWidth; b.classList.add("bad"); b.textContent="Incorrecto 🫩"; }
+    };
     z.appendChild(b);
   });
 }
-/* 3 · velitas */
+/* 3 · 22 velitas en 10 segundos: el fuego crece con el tiempo y, si se acaba, la página arde hasta que apague la última */
 function g3(){
-  const z=shell("Apaga las velitas","Toca cada vela para soplarla y pide un deseo.");
-  let left=3;
-  for(let k=0;k<3;k++){
+  const z=shell("Apaga las 22 velitas","Solo tienes 10 segundos para apagar todas las velas o la página se va a prender en llamas, ¡apúraleeeeeee!");
+  z.style.gap="8px 6px";
+  z.innerHTML='<div class="timer" id="timer">10.0</div>';
+  const timer=document.getElementById("timer"), t0=performance.now();
+  let left=22;
+  for(let k=0;k<22;k++){
     const c=document.createElement("button"); c.className="candle"; c.setAttribute("aria-label","Vela encendida");
     c.innerHTML='<div class="flame"></div><div class="stick"></div>';
-    c.onclick=()=>{ if(c.classList.contains("off"))return; c.classList.add("off"); burst(10); sfx.blow(); if(--left===0) setTimeout(win,400) };
+    c.onclick=()=>{
+      if(c.classList.contains("off"))return;
+      const r=c.getBoundingClientRect(); c.classList.add("off"); c.setAttribute("aria-label","Vela apagada");
+      burst(6, r.left+r.width/2, r.top); sfx.blow();
+      if(--left===0){ stop(); timer.classList.remove("late"); timer.textContent="¡Uff, apagaste el incendio! 🧯"; setTimeout(win,1200) }
+    };
     z.appendChild(c);
   }
-  const t=document.createElement("div"); t.className="cake"; t.textContent="🎂 Pide tu deseo en silencio"; z.appendChild(t);
+  const clock=setInterval(()=>{
+    if(!timer.isConnected){ stop(); return } // se saltó el juego
+    const s=(performance.now()-t0)/1000;
+    setHeat(Math.min(1,(s/10)**1.4));
+    if(s<10) timer.textContent=(10-s).toFixed(1);
+    else if(!card.classList.contains("onfire")){ card.classList.add("onfire"); timer.classList.add("late"); timer.textContent="🔥 ¡Se está quemando todo! ¡Sigue soplando! 🔥" }
+    if(Math.random()<heat*.6) sfx.crackle();
+  },100);
+  function stop(){ clearInterval(clock); card.classList.remove("onfire"); setHeat(0) }
 }
 /* 4 · mantener presionado */
 function g4(){
@@ -288,7 +345,7 @@ function finale(){
 function intro(){
   card.innerHTML=`<div class="step">Un pequeño regalo adicional</div>
     <h2>Presta atención a los mensajes</h2>
-    <p>Vas a estar pasando por diferentes pruebas muy sencillas, en cada una podras ver desplegados mensajitos para que los puedas leer, espero que te guste.</p>
+    <p>Vas a estar pasando por diferentes pruebas muy sencillas, en cada una podrás ver desplegados mensajitos para que los puedas leer, espero que te guste.</p>
     <div class="zone" style="font-size:3.4rem">🎁</div>
     <div><button class="btn" id="go">Empezar el camino</button></div>`;
   document.getElementById("go").onclick=()=>{ sfx.tick(); g1(); };
@@ -310,8 +367,17 @@ const sfx={
   pop:k=>tone(520+k*90,0,.14,"sine",.25,(520+k*90)*2),
   heart:k=>tone(950-k*25,0,.18,"sine",.28,(950-k*25)*1.8),
   bad:()=>tone(240,0,.2,"triangle",.18,150),
+  right:()=>[659,988].forEach((f,i)=>tone(f,i*.1,.25,"triangle",.18)),
   fill:v=>tone(300+v*6,0,.08,"sine",.1),
   win:()=>[523,659,784,1047].forEach((f,i)=>tone(f,i*.09,.3,"triangle",.18)),
+  crackle(){
+    if(muted) return;
+    const a=audio(), n=a.sampleRate*.03, b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0);
+    for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);
+    const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain();
+    s.buffer=b; f.type="highpass"; f.frequency.value=1500+Math.random()*2500; g.gain.value=.25+Math.random()*.3;
+    s.connect(f).connect(g).connect(a.destination); s.start();
+  },
   blow(){
     if(muted) return;
     const a=audio(), n=a.sampleRate*.5, b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0);
@@ -337,11 +403,9 @@ paintMute();
 
 /* confeti */
 const cv=document.getElementById("fx"), cx=cv.getContext("2d"); let parts=[], raf=null;
-const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
 function size(){cv.width=innerWidth*devicePixelRatio; cv.height=innerHeight*devicePixelRatio; cx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
 addEventListener("resize",size); size();
 function burst(n, x=innerWidth/2, y=innerHeight*.45){
-  if(reduce)return;
   const cols=["#ff5c93","#ffb3cc","#d6336c","#ffd166","#ffffff"];
   for(let i=0;i<n;i++) parts.push({x:x+(Math.random()-.5)*120,y,vx:(Math.random()-.5)*12,vy:-Math.random()*13-3,
     s:4+Math.random()*6,c:cols[i%cols.length],r:Math.random()*6,vr:(Math.random()-.5)*.3,heart:Math.random()<.3,life:0});
@@ -357,6 +421,28 @@ function tick(){
     cx.restore();
   });
   raf = parts.length ? requestAnimationFrame(tick) : null;
+}
+
+/* fuego: llamas que suben desde abajo, detrás de la tarjeta. heat va de 0 (nada) a 1 (todo en llamas) */
+const fc=document.getElementById("fire"), fcx=fc.getContext("2d"), scorch=document.getElementById("scorch");
+let heat=0, flames=[], fireRaf=null;
+function fireSize(){fc.width=innerWidth*devicePixelRatio; fc.height=innerHeight*devicePixelRatio; fcx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+addEventListener("resize",fireSize); fireSize();
+function setHeat(h){ heat=h; scorch.style.opacity=h; if(!fireRaf) fireRaf=requestAnimationFrame(fireTick) }
+function fireTick(){
+  fcx.clearRect(0,0,innerWidth,innerHeight);
+  for(let i=0;i<Math.round(heat*9);i++) flames.push({x:Math.random()*innerWidth, y:innerHeight+30, r:30+Math.random()*50*(.4+heat),
+    vy:(2+Math.random()*3)*(.5+heat), life:0, max:30+Math.random()*80*heat});
+  flames=flames.filter(f=>f.life<f.max);
+  flames.forEach(f=>{
+    f.life++; f.y-=f.vy; f.x+=Math.sin((f.life+f.r)*.15)*1.5;
+    const t=f.life/f.max, r=f.r*(1-t*.75), a=.9*(1-t), g=fcx.createRadialGradient(f.x,f.y,0,f.x,f.y,r);
+    g.addColorStop(0,`rgba(255,${235-t*120|0},120,${a})`);
+    g.addColorStop(.45,`rgba(255,${130-t*90|0},20,${a*.85})`);
+    g.addColorStop(1,"rgba(200,30,0,0)");
+    fcx.fillStyle=g; fcx.beginPath(); fcx.arc(f.x,f.y,r,0,7); fcx.fill();
+  });
+  fireRaf = (heat>0 || flames.length) ? requestAnimationFrame(fireTick) : null;
 }
 
 paint(); intro();
