@@ -72,8 +72,6 @@ button:focus-visible{outline:3px solid var(--pink-deep); outline-offset:3px}
 .count{font-family:var(--display); font-size:2.6rem; color:var(--pink)}
 .note{width:100%; margin:0; display:grid; place-items:center; text-align:center; min-height:2.6em;
   font-family:var(--display); font-size:2rem; line-height:1.2; color:var(--pink-deep); text-wrap:balance; animation:appear .4s ease-out}
-.debug{display:flex; justify-content:center; gap:8px; flex-wrap:wrap}
-.skip{background:none; border:2px dashed var(--muted); color:var(--muted); border-radius:999px; padding:6px 14px; font-weight:800; font-size:.85rem}
 .candle{border:0; background:none; display:flex; flex-direction:column; align-items:center; padding:4px}
 .flame{width:14px; height:22px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%; background:linear-gradient(#ffd166,#ff8a3d); animation:flick .4s infinite alternate}
 .candle.off .flame{visibility:hidden}
@@ -90,11 +88,15 @@ canvas#fire{position:fixed; inset:0; width:100%; height:100%; pointer-events:non
 .card.onfire{box-shadow:0 0 0 3px #ff8a3d, 0 0 50px 10px rgba(255,90,0,.6); animation:tremble .12s infinite}
 @keyframes tremble{25%{transform:translate(-1px,1px)}75%{transform:translate(1px,-1px)}}
 @keyframes flick{to{transform:scale(1.1,.9)}}
-.meter{width:100%; height:20px; border-radius:999px; background:var(--card); border:2px solid var(--line); overflow:hidden}
-.meter i{display:block; height:100%; width:0; background:linear-gradient(90deg,#ff9ebf,var(--pink))}
-.hold{user-select:none; -webkit-user-select:none; touch-action:none}
-.tile{width:48px; height:48px; border-radius:12px; border:2px solid var(--line); background:var(--card); font-family:var(--display); font-size:1.4rem; color:var(--pink-deep)}
-.tile.used{visibility:hidden}
+.sling{display:block; width:100%; height:280px; touch-action:none; cursor:grab}
+.sling:active{cursor:grabbing}
+.note.small{font-size:1.25rem; min-height:1.6em}
+/* último juego: las letras del título se vuelven tocables */
+.hunt .word{white-space:nowrap}
+.hunt .ltr{display:inline-block; cursor:pointer; transition:transform .15s, color .15s; animation:bob 2.4s ease-in-out infinite; animation-delay:calc(var(--i) * -.12s)}
+.hunt .ltr:hover{color:var(--pink); transform:scale(1.18)}
+.hunt .ltr.got{color:#fff; text-shadow:0 0 10px var(--pink), 0 0 4px var(--pink); animation:none; cursor:default}
+@keyframes bob{50%{transform:translateY(-4px)}}
 .answer{width:100%; display:flex; justify-content:center; gap:8px; min-height:52px}
 .answer span{width:44px; height:48px; border-bottom:3px solid var(--line); font-family:var(--display); font-size:1.5rem; color:var(--pink-deep); display:grid; place-items:center}
 .reveal{font-size:1.05rem; color:var(--pink-deep); font-weight:600}
@@ -136,15 +138,15 @@ canvas#fx{position:fixed; inset:0; width:100%; height:100%; pointer-events:none;
 <script>
 const NAME = ["P","A","U","L","A"];
 const LINES = [
-  "Por cada uno de los días que he podido compartir a tu lado, por todas esas tardes, noches y mañanas que hemos compartido juntos, por todas esas salidas inesperadas y aunque por mas planeadas que fueran nunca terminaban como esperabamos, por cada uno de los restaurantes a los que nos fuimos de gorditos a comer así sea un heladito, por todos esos dias que espero nunca tengan un fin.",
-  "Amo el poder tener a alguien tan unica y inigualable persona en mi vida, amo poder decir que eres la unica persona con la que realmente quiero estar para el resto de la eternidad, amo poder imaginarte como lo que alguna vez soñe tener en mi vida, amo que la reciprocidad y el cariño mutuo que nos tenemos nos permita seguir luchando por esta relación todos los días,",
-  "Una persona tan inteligente, tan responsable, tan increiblemente maravillosa, una persona a la que le confiaria toda mi vida, por que si se de alguien que a pesar de las adversidades, sabe perfectamente sobrellevar todas las situaciones negativas en su vida, eres tu, una mujer, una chica, una amiga, una novia, una confidente, una amante, una persona con la que no existe el mas minimo ápice de duda que amo con toda el alma,",
-  "Llenas mi vida de amor y de calma,",
-  "Así que hoy celebro que existas. ¡Feliz cumpleaños!"
+  "Por cada uno de los días que he podido compartir a tu lado, por todas esas tardes, noches y mañanas que hemos compartido juntos, por todas esas salidas inesperadas y aunque por más planeadas que fueran nunca terminaban como esperábamos, por cada uno de los restaurantes a los que nos fuimos de gorditos a comer así sea un heladito, por todos esos días que espero nunca tengan un fin.",
+  "Amo el poder tener a alguien tan única e inigualable persona en mi vida, amo poder decir que eres la única persona con la que realmente quiero estar para el resto de la eternidad, amo poder imaginarte como lo que alguna vez soñé tener en mi vida, amo que la reciprocidad y el cariño mutuo que nos tenemos nos permita seguir luchando por esta relación todos los días,",
+  "Una persona tan inteligente, tan responsable, tan increíblemente maravillosa, una persona a la que le confiaría toda mi vida, porque si sé de alguien que a pesar de las adversidades, sabe perfectamente sobrellevar todas las situaciones negativas en su vida, eres tú, una mujer, una chica, una amiga, una novia, una confidente, una amante, una persona con la que no existe el más mínimo ápice de duda que amo con toda el alma,",
+  "Llenas mi vida de mucho aprendizaje, me llenas de lecciones, me llenas de motivaciones, me llenas de mucha comidita y postrecitos ricos ricos, me llenas de besos, de amor, de cariños, de abrazos, de risas, de muchas risas me llenas el alma, me llenas de tiktoks que en su mayoría la verdad son malos, pero el simple hecho de que tú pienses en mostrarme cosas que tú consideras graciosas o que me harán reír, es todo lo que necesito saber para ver cómo de grande es tu amor,",
+  "Ahora solo espero que hayas disfrutado de este pequeño detallito que prepare para ti, anhelo que asi como estas te puedo seguir dando miles de sorpresas sorpresivas en el futuro y de verdad nunca cansarme de sorprenderte con este tipo de cosas, espero así mismo que recuerdes mi incandescente amor por ti, te deseo un muy Feliz cumpleaños mi corazon, te amo 🧡🧡🧡"
 ];
 /* ✏️ Comentarios de los 22 corazones: el 1 sale al reventar el primero, el 22 al reventar el último */
 const NOTAS = [
-  "Mi Corazon de Melón",
+  "Mi Corazón de Melón",
   "Mi Chuchurru",
   "Mi Amorcete",
   "Mi Bebita Fiu Fiu",
@@ -153,13 +155,13 @@ const NOTAS = [
   "Mi Princesa",
   "Mi Cielito",
   "Mi Chocorramito",
-  "Mi Bombon",
+  "Mi Bombón",
   "Mi Arroz Paisa",
   "Mi Reina",
   "Mi Preciosura",
   "Mi Cachetona",
   "Mi Caramelo",
-  "Mi Aguita Fria",
+  "Mi Aguita Fría",
   "Mi Limonada De Coco",
   "Mi Lichi",
   "Mi Chocolatico",
@@ -195,6 +197,7 @@ function paint(){
 }
 
 function win(){
+  undoTitle?.(); // si venía del último juego, el título vuelve a ser normal
   burst(60); sfx.win();
   const i=stage;
   card.innerHTML=`<div class="step">Parada ${i+1} de 5</div>
@@ -205,13 +208,8 @@ function win(){
   stage++; paint();
   document.getElementById("next").onclick = ()=>{ sfx.tick(); (stage<5 ? games[stage] : finale)(); };
 }
-/* 🧪 Botones de prueba para saltar juegos. Antes de mandárselo a Paula, cambia esto a false */
-const DEBUG = true;
-
 function shell(title,text){
-  card.innerHTML=`<div class="step">Parada ${stage+1} de 5</div><h2>${title}</h2><p>${text}</p><div class="zone" id="zone"></div>
-    ${DEBUG?'<div class="debug" id="debug"><button class="skip" id="skip">⏭ Saltar juego</button></div>':""}`;
-  if(DEBUG) document.getElementById("skip").onclick=()=>{ document.querySelectorAll(".bigheart").forEach(h=>h.remove()); win() };
+  card.innerHTML=`<div class="step">Parada ${stage+1} de 5</div><h2>${title}</h2><p>${text}</p><div class="zone" id="zone"></div>`;
   return document.getElementById("zone");
 }
 
@@ -221,13 +219,7 @@ function g1(){
   z.style.flexDirection="column";
   z.innerHTML='<div class="count" id="count">0 / 22</div><p class="note" id="note">¿Lograrás encontrar cada uno?</p>';
   let k=0;
-  if(DEBUG){
-    const b=document.createElement("button"); b.className="skip"; b.textContent="💗 Siguiente corazón";
-    b.onclick=()=>document.querySelector(".bigheart")?.click();
-    document.getElementById("debug").appendChild(b);
-  }
   const next=()=>{
-    if(!document.getElementById("count")) return; // ya se saltó el juego
     const s=Math.min(36+k*10, innerHeight*.6), h=document.createElement("button");
     /* busca un lugar que no tape la tarjeta (donde sale el comentario); si no cabe en 40 intentos, se queda con el último */
     const c=card.getBoundingClientRect(); let x, y;
@@ -242,7 +234,7 @@ function g1(){
       burst(12+k*2, r.left+r.width/2, r.top+r.height/2); sfx.heart(k);
       document.getElementById("count").textContent=`${k+1} / 22`;
       const n=document.getElementById("note"); n.textContent=NOTAS[k]; n.style.animation="none"; void n.offsetWidth; n.style.animation="";
-      if(++k===22) setTimeout(()=>document.getElementById("count")&&win(),2000); else setTimeout(next,400);
+      if(++k===22) setTimeout(win,2000); else setTimeout(next,400);
     };
     document.body.appendChild(h);
   };
@@ -292,7 +284,6 @@ function g3(){
     z.appendChild(c);
   }
   const clock=setInterval(()=>{
-    if(!timer.isConnected){ stop(); return } // se saltó el juego
     const s=(performance.now()-t0)/1000;
     setHeat(Math.min(1,(s/10)**1.4));
     if(s<10) timer.textContent=(10-s).toFixed(1);
@@ -301,31 +292,127 @@ function g3(){
   },100);
   function stop(){ clearInterval(clock); card.classList.remove("onfire"); setHeat(0) }
 }
-/* 4 · mantener presionado */
+/* 4 · catapulta: estira hacia atrás, apunta y suelta para que Paula caiga en los brazos de Felipe */
+const FALLA_CORTA = ["Dale un poquito mas fuerte", "Ya casiii", "Pero como si tuvieras ganas"];
+const FALLA_LARGA = ["A donde intentas llegar?", "No pero yo tampoco puedo saltar", "Apuntele bien"];
 function g4(){
-  const z=shell("Llena el medidor de amor","Mantén presionado el botón hasta que se llene.");
-  z.style.flexDirection="column";
-  z.innerHTML='<div class="meter"><i id="bar"></i></div><button class="btn hold" id="hold">Mantén presionado 💞</button>';
-  let v=0, timer=null; const bar=document.getElementById("bar"), b=document.getElementById("hold");
-  const start=e=>{e.preventDefault(); if(timer)return; timer=setInterval(()=>{v=Math.min(100,v+2.5); bar.style.width=v+"%"; if(v%10===0) sfx.fill(v); if(v>=100){stop(); win();}},40)};
-  const stop=()=>{clearInterval(timer); timer=null};
-  b.addEventListener("pointerdown",start); ["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,stop));
-  b.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter")start(e)}); b.addEventListener("keyup",stop);
+  const z=shell("Ven directo a mi","Haz jugado angry birds? Pues haz que el angry bird caiga en el cerdito.");
+  z.style.flexDirection="column"; z.style.padding="8px";
+  z.innerHTML='<canvas class="sling" id="sling" aria-label="Catapulta"></canvas><p class="note small" id="msg">Arrastra hacia atrás y suelta 🎯</p>';
+  const cv=document.getElementById("sling"), g=cv.getContext("2d"), msg=document.getElementById("msg");
+  const W=cv.clientWidth, H=280, GROUND=H-22, GRAV=.35, K=.16, MAXPULL=95;
+  cv.width=W*devicePixelRatio; cv.height=H*devicePixelRatio; g.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  const SX=70, REST={x:SX, y:GROUND-78};
+  const FX=Math.round(W*(.7+Math.random()*.2)), CATCH={x:FX-16, y:GROUND-46};
+  const INK="#5a1f3a", HAIR="#d6336c", WOOD="#8a5a3b", BAND="#ff5c93";
+  let p={...REST}, v=null, ang=0, state="ready", drag=false, step=0, t=0;
+
+  const local=e=>{ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top} };
+  cv.addEventListener("pointerdown",e=>{
+    if(state!=="ready") return;
+    drag=true; cv.setPointerCapture(e.pointerId); move(e);
+  });
+  cv.addEventListener("pointermove",e=>drag&&move(e));
+  cv.addEventListener("pointerup",()=>{
+    if(!drag) return; drag=false;
+    const dx=REST.x-p.x, dy=REST.y-p.y;
+    if(Math.hypot(dx,dy)<12){ p={...REST}; return }
+    v={x:dx*K, y:dy*K}; state="fly"; sfx.blow(); msg.textContent="Vuela Vuelaaaa";
+  });
+  function move(e){
+    const q=local(e); let dx=q.x-REST.x, dy=q.y-REST.y; const len=Math.hypot(dx,dy);
+    if(len>MAXPULL){ dx*=MAXPULL/len; dy*=MAXPULL/len }
+    p={x:REST.x+dx, y:Math.min(REST.y+dy, GROUND-16)}; // que no se hunda en el piso
+    const s=Math.floor(Math.min(len,MAXPULL)/20); if(s>step) sfx.stretch(s); step=s;
+  }
+  function reset(){ p={...REST}; v=null; ang=0; step=0; state="ready" }
+  function miss(){
+    state="miss"; sfx.bad();
+    const list=p.x<FX-16 ? FALLA_CORTA : FALLA_LARGA; msg.textContent=list[Math.random()*list.length|0];
+    setTimeout(()=>{ if(cv.isConnected){ reset(); } },1200);
+  }
+  function update(){
+    if(state!=="fly") return;
+    for(let i=0;i<3;i++){ // 3 pasitos por cuadro para no "atravesar" los brazos cuando va muy rápido
+      v.y+=GRAV/3; p.x+=v.x/3; p.y+=v.y/3;
+      if(Math.hypot(p.x-CATCH.x,p.y-CATCH.y)<28){
+        state="caught"; p={x:FX-12, y:GROUND-36}; ang=0; sfx.right(); msg.textContent="Al fin, junticos <3";
+        const r=cv.getBoundingClientRect(); burst(50, r.left+CATCH.x, r.top+CATCH.y);
+        setTimeout(()=>cv.isConnected&&win(),1600); return;
+      }
+    }
+    ang+=.18;
+    if(p.y>GROUND-12){ p.y=GROUND-12; ang=Math.PI/2; miss() }
+    else if(p.x>W+60 || p.x<-60) miss();
+  }
+
+  /* dibujos con palitos, como en el boceto. (x,y) es la cadera */
+  function line(x1,y1,x2,y2){ g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke() }
+  function head(x,y,r){ g.beginPath(); g.arc(x,y,r,0,7); g.fillStyle="#fff"; g.fill(); g.stroke();
+    g.beginPath(); g.arc(x,y+1,r*.5,.2*Math.PI,.8*Math.PI); g.stroke();
+    g.fillStyle=INK; g.fillRect(x-r*.4,y-r*.35,1.6,3); g.fillRect(x+r*.25,y-r*.35,1.6,3) }
+  function paula(x,y,a,armsUp){
+    g.save(); g.translate(x,y); g.rotate(a); g.strokeStyle=INK; g.lineWidth=2.5; g.lineCap="round";
+    line(0,0,0,-24); line(0,0,-8,14); line(0,0,8,14);
+    if(armsUp){ line(0,-18,-12,-30); line(0,-18,12,-30) } else { line(0,-18,-12,-8); line(0,-18,12,-8) }
+    g.strokeStyle=HAIR; g.lineWidth=3;
+    g.beginPath(); g.arc(0,-34,12,Math.PI*1.05,Math.PI*1.95); g.stroke();
+    g.beginPath(); g.arc(-15,-34,6,-.5*Math.PI,1.3*Math.PI); g.stroke();
+    g.beginPath(); g.arc(15,-34,6,-.3*Math.PI,1.5*Math.PI); g.stroke();
+    g.strokeStyle=INK; g.lineWidth=2.5; head(0,-34,10);
+    g.restore();
+  }
+  function felipe(){
+    const x=FX, y=GROUND-26; g.strokeStyle=INK; g.lineWidth=2.5; g.lineCap="round";
+    line(x,y,x,y-30); line(x,y,x-9,y+26); line(x,y,x+9,y+26);
+    line(x,y-22,x-28,y-36); line(x,y-22,x-28,y-10); // brazos abiertos hacia ella
+    head(x,y-42,11);
+  }
+  function label(text,x,y){ g.font='18px Caprasimo, Georgia, serif'; g.fillStyle=HAIR; g.textAlign="center"; g.fillText(text,x,y) }
+  function draw(){
+    t++; g.clearRect(0,0,W,H);
+    g.strokeStyle="#f7b7cf"; g.lineWidth=3; line(0,GROUND,W,GROUND);
+    if(state!=="caught"){ g.fillStyle=`rgba(255,92,147,${.12+.08*Math.sin(t/12)})`; g.beginPath(); g.arc(CATCH.x,CATCH.y,28,0,7); g.fill() }
+    felipe(); label("Yo",FX,GROUND-92);
+    g.strokeStyle=WOOD; g.lineWidth=7; g.lineCap="round";
+    line(SX,GROUND,SX,GROUND-45); line(SX,GROUND-45,SX-16,GROUND-82);
+    const loaded=state==="ready";
+    g.strokeStyle=BAND; g.lineWidth=3;
+    if(loaded){ line(SX-16,GROUND-82,p.x,p.y) } else line(SX-16,GROUND-82,SX+16,GROUND-82);
+    if(state==="caught"){ paula(p.x,p.y,-.5,true); label("💞",FX-6,GROUND-100) }
+    else paula(p.x,p.y,ang,state==="fly");
+    if(loaded) { g.strokeStyle=BAND; g.lineWidth=3; line(p.x,p.y,SX+16,GROUND-82) }
+    g.strokeStyle=WOOD; g.lineWidth=7; line(SX,GROUND-45,SX+16,GROUND-82);
+    if(loaded && !drag) label("Tú",SX,GROUND-128);
+    if(drag){ // pedacito de la trayectoria, en puntitos como el boceto
+      let q={...p}, s={x:(REST.x-p.x)*K, y:(REST.y-p.y)*K}; g.fillStyle=INK;
+      for(let i=1;i<=36;i++){ s.y+=GRAV; q.x+=s.x; q.y+=s.y; if(i%3===0){ g.globalAlpha=1-i/40; g.fillRect(q.x-2,q.y-1,4,2) } }
+      g.globalAlpha=1;
+    }
+  }
+  (function loop(){ if(!cv.isConnected) return; update(); draw(); requestAnimationFrame(loop) })();
 }
-/* 5 · ordenar el nombre */
+/* 5 · arma tu nombre tocando las letras del título de arriba */
+let undoTitle=null;
 function g5(){
-  const z=shell("Arma tu nombre","Toca las letras en orden para escribir tu nombre.");
+  const z=shell("Arma tu nombre","Busca las letras en el título de arriba y tócalas en orden para escribir tu nombre ☝️");
   const ans=document.createElement("div"); ans.className="answer";
   NAME.forEach(()=>ans.appendChild(document.createElement("span")));
   z.appendChild(ans);
-  let pos=0; const order=[3,0,4,1,2];
-  order.forEach(i=>{
-    const t=document.createElement("button"); t.className="tile"; t.textContent=NAME[i];
-    t.onclick=()=>{
-      if(t.textContent===NAME[pos]){ ans.children[pos].textContent=t.textContent; t.classList.add("used"); sfx.pop(pos); pos++; if(pos===5) setTimeout(win,300); }
-      else { sfx.bad(); t.animate([{transform:"translateX(-5px)"},{transform:"translateX(5px)"},{transform:"none"}],{duration:300}); }
-    };
-    z.appendChild(t);
+  const h1=document.querySelector("header h1"), original=h1.innerHTML;
+  let i=0; // cada palabra en un span que no se parte, cada letra en su propio span
+  h1.innerHTML=h1.textContent.split(/(\s+)/).map(w=>/\s/.test(w)?w:
+    `<span class="word">${[...w].map(c=>/\p{L}/u.test(c)?`<span class="ltr" style="--i:${i++}">${c}</span>`:c).join("")}</span>`).join("");
+  h1.classList.add("hunt");
+  undoTitle=()=>{ h1.innerHTML=original; h1.classList.remove("hunt"); undoTitle=null };
+  let pos=0;
+  h1.querySelectorAll(".ltr").forEach(s=>s.onclick=()=>{
+    if(s.classList.contains("got") || pos===5) return;
+    if(s.textContent.toLowerCase()===NAME[pos].toLowerCase()){
+      s.classList.add("got"); ans.children[pos].textContent=NAME[pos]; sfx.pop(pos);
+      const r=s.getBoundingClientRect(); burst(10, r.left+r.width/2, r.top+r.height/2);
+      if(++pos===5) setTimeout(win,600);
+    } else { sfx.bad(); s.animate([{transform:"translateX(-5px)"},{transform:"translateX(5px)"},{transform:"none"}],{duration:300}) }
   });
 }
 const games=[g1,g2,g3,g4,g5];
@@ -368,7 +455,7 @@ const sfx={
   heart:k=>tone(950-k*25,0,.18,"sine",.28,(950-k*25)*1.8),
   bad:()=>tone(240,0,.2,"triangle",.18,150),
   right:()=>[659,988].forEach((f,i)=>tone(f,i*.1,.25,"triangle",.18)),
-  fill:v=>tone(300+v*6,0,.08,"sine",.1),
+  stretch:k=>tone(200+k*70,0,.06,"triangle",.1),
   win:()=>[523,659,784,1047].forEach((f,i)=>tone(f,i*.09,.3,"triangle",.18)),
   crackle(){
     if(muted) return;
