@@ -63,8 +63,13 @@ button:focus-visible{outline:3px solid var(--pink-deep); outline-offset:3px}
 .opt{background:var(--card); color:var(--ink); border:2px solid var(--line); border-radius:14px; padding:12px 14px; font-weight:600; width:100%}
 .opt.bad{border-color:#e5a3b9; color:var(--muted); animation:shake .35s}
 @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
-.heart{position:absolute; border:0; background:none; font-size:2.1rem; line-height:1; padding:6px; animation:float 3.2s ease-in-out infinite}
+.bigheart{position:fixed; z-index:15; border:0; background:none; padding:0; line-height:0;
+  animation:appear .35s ease-out, float 3.2s ease-in-out .35s infinite; filter:drop-shadow(0 10px 16px rgba(90,31,58,.35))}
+.bigheart svg{width:100%; height:100%}
 @keyframes float{50%{transform:translateY(-10px) rotate(-6deg)}}
+@keyframes appear{from{transform:scale(0); opacity:0}}
+.count{font-family:var(--display); font-size:2.6rem; color:var(--pink)}
+.note{font-size:1.1rem; font-weight:600; color:var(--pink-deep); min-height:3em; animation:appear .4s ease-out}
 .candle{border:0; background:none; display:flex; flex-direction:column; align-items:center; padding:4px}
 .flame{width:16px; height:24px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%; background:linear-gradient(#ffd166,#ff8a3d); animation:flick .4s infinite alternate}
 .candle.off .flame{visibility:hidden}
@@ -111,23 +116,44 @@ canvas#fx{position:fixed; inset:0; width:100%; height:100%; pointer-events:none;
   <div class="path" id="path" aria-label="Progreso del camino"></div>
 
   <section class="card" id="card" aria-live="polite"></section>
-
-  <section class="card" aria-label="Acróstico">
-    <div class="step">Tu acróstico</div>
-    <div class="poem" id="poem"></div>
-  </section>
 </div>
 
 <script>
 const NAME = ["P","A","U","L","A"];
 const LINES = [
-  "Por cada sonrisa tuya que ilumina mis días,",
+  "Por cada uno de los días que he podido compartir a tu lado, por todas esas tardes, noches y mañanas que hemos compartido juntos, por todas esas salidas inesperadas y aunque por mas planeadas que fueran nunca terminaban como esperabamos, por cada uno de los restaurantes a los que nos fuimos de gorditos a comer así sea un heladito, por todos esos dias que espero nunca tengan un fin.",
   "Amo la forma en que haces todo más bonito,",
   "Única en el mundo, mi persona favorita,",
   "Llenas mi vida de amor y de calma,",
   "Así que hoy celebro que existas. ¡Feliz cumpleaños!"
 ];
-const FOTOS = Array.from({length:15},(_,i)=>`fondo/foto${String(i+1).padStart(2,"0")}.jpg`);
+/* ✏️ Comentarios de los 22 corazones: el 1 sale al reventar el primero, el 22 al reventar el último */
+const NOTAS = [
+  "Mi Corazon de Melón",
+  "Mi Chuchurru",
+  "Mi Amorcete",
+  "Mi Bebita Fiu Fiu",
+  "Mi Pidaña",
+  "Mi Marranita",
+  "Mi Princesa",
+  "Mi Cielito",
+  "Mi Chocorramito",
+  "Mi Bombon",
+  "Mi Arroz Paisa",
+  "Mi Reina",
+  "Mi Preciosura",
+  "Mi Cachetona",
+  "Mi Caramelo",
+  "Mi Aguita Fria",
+  "Mi Limonada De Coco",
+  "Mi Lichi",
+  "Mi Chocolatico",
+  "Mi Sensibilirad",
+  "Mi Fresita",
+  "Mi Todo"
+];
+const HEART_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4 6.3 4c2.3 0 3.8 1.3 5.7 3.4C13.9 5.3 15.4 4 17.7 4c4 0 5.9 4.4 4.3 7.7C19.5 16.4 12 21 12 21z"/><ellipse cx="7.5" cy="8.5" rx="2" ry="1.3" fill="#fff" opacity=".45" transform="rotate(-30 7.5 8.5)"/></svg>';
+const FOTOS =Array.from({length:15},(_,i)=>`fondo/foto${String(i+1).padStart(2,"0")}.jpg`);
 let stage = 0;
 
 /* fondo: llena la pantalla de polaroids en orden aleatorio, cada una un poquito chueca */
@@ -145,22 +171,19 @@ let stage = 0;
 }
 const card = document.getElementById("card");
 const pathEl = document.getElementById("path");
-const poem = document.getElementById("poem");
 
-NAME.forEach((l,i)=>{
+NAME.forEach(l=>{
   const s=document.createElement("div"); s.className="stone"; s.textContent=l; pathEl.appendChild(s);
-  const ln=document.createElement("div"); ln.className="line"; ln.innerHTML=`<b>${l}</b><span>${LINES[i]}</span>`; poem.appendChild(ln);
 });
 function paint(){
   [...pathEl.children].forEach((s,i)=>{s.className="stone"+(i<stage?" done":i===stage?" now":"")});
-  [...poem.children].forEach((l,i)=>l.classList.toggle("on",i<stage));
 }
 
 function win(){
   burst(60); sfx.win();
   const i=stage;
   card.innerHTML=`<div class="step">Parada ${i+1} de 5</div>
-    <h2>¡Ganaste la letra ${NAME[i]}!</h2>
+    <h2>¡Obtuviste la letra ${NAME[i]}!</h2>
     <p class="reveal"><b>${NAME[i]}</b> — ${LINES[i]}</p>
     <div style="flex:1"></div>
     <div><button class="btn" id="next">${i<4?"Seguir el camino":"Ver tu sorpresa"}</button></div>`;
@@ -172,16 +195,32 @@ function shell(title,text){
   return document.getElementById("zone");
 }
 
-/* 1 · atrapar corazones */
+/* 1 · 22 corazones, uno por cada año: salen de uno en uno por toda la pantalla, cada vez más grandes y de otro color */
 function g1(){
-  const z=shell("Atrapa los corazones","Toca los 5 corazones que andan flotando.");
-  let left=5;
-  for(let k=0;k<5;k++){
-    const h=document.createElement("button"); h.className="heart"; h.textContent="💗"; h.setAttribute("aria-label","Corazón");
-    h.style.left=(8+Math.random()*72)+"%"; h.style.top=(8+Math.random()*62)+"%"; h.style.animationDelay=(k*.4)+"s";
-    h.onclick=()=>{h.remove(); burst(8); sfx.pop(5-left); if(--left===0) setTimeout(win,250)};
-    z.appendChild(h);
-  }
+  const z=shell("A que no adivinas cuantos corazones hay en esta sección","Trata de reventear todos los corazones y veras diferentes maneras en las que me podria dirigir a ti.");
+  z.style.flexDirection="column";
+  z.innerHTML='<div class="count" id="count">0 / 22</div><p class="note" id="note">Lograras encontrar cada uno?</p>';
+  let k=0;
+  const next=()=>{
+    const s=Math.min(36+k*10, innerHeight*.6), h=document.createElement("button");
+    /* busca un lugar que no tape la tarjeta (donde sale el comentario); si no cabe en 40 intentos, se queda con el último */
+    const c=card.getBoundingClientRect(); let x, y;
+    for(let t=0;t<40;t++){
+      x=16+Math.random()*(innerWidth-s-32); y=16+Math.random()*(innerHeight-s-32);
+      if(x+s<c.left-10 || x>c.right+10 || y+s<c.top-10 || y>c.bottom+10) break;
+    }
+    h.className="bigheart"; h.setAttribute("aria-label",`Corazón ${k+1} de 22`); h.innerHTML=HEART_SVG;
+    h.style.cssText=`width:${s}px; height:${s}px; color:hsl(${(340+k*137.5)%360} 85% 62%); left:${x}px; top:${y}px`;
+    h.onclick=()=>{
+      const r=h.getBoundingClientRect(); h.remove();
+      burst(12+k*2, r.left+r.width/2, r.top+r.height/2); sfx.heart(k);
+      document.getElementById("count").textContent=`${k+1} / 22`;
+      const n=document.getElementById("note"); n.textContent=NOTAS[k]; n.style.animation="none"; void n.offsetWidth; n.style.animation="";
+      if(++k===22) setTimeout(win,2000); else setTimeout(next,400);
+    };
+    document.body.appendChild(h);
+  };
+  next();
 }
 /* 2 · pregunta */
 function g2(){
@@ -247,9 +286,9 @@ function finale(){
 }
 
 function intro(){
-  card.innerHTML=`<div class="step">Antes de empezar</div>
-    <h2>Un camino hecho para ti</h2>
-    <p>Son cinco paradas con juegos cortitos. En cada una ganas una letra, y al final se arma algo que escribí pensando en ti.</p>
+  card.innerHTML=`<div class="step">Un pequeño regalo adicional</div>
+    <h2>Presta atención a los mensajes</h2>
+    <p>Vas a estar pasando por diferentes pruebas muy sencillas, en cada una podras ver desplegados mensajitos para que los puedas leer, espero que te guste.</p>
     <div class="zone" style="font-size:3.4rem">🎁</div>
     <div><button class="btn" id="go">Empezar el camino</button></div>`;
   document.getElementById("go").onclick=()=>{ sfx.tick(); g1(); };
@@ -269,6 +308,7 @@ function tone(f, at=0, d=.15, type="sine", vol=.2, f2){
 const sfx={
   tick:()=>tone(880,0,.06,"triangle",.12),
   pop:k=>tone(520+k*90,0,.14,"sine",.25,(520+k*90)*2),
+  heart:k=>tone(950-k*25,0,.18,"sine",.28,(950-k*25)*1.8),
   bad:()=>tone(240,0,.2,"triangle",.18,150),
   fill:v=>tone(300+v*6,0,.08,"sine",.1),
   win:()=>[523,659,784,1047].forEach((f,i)=>tone(f,i*.09,.3,"triangle",.18)),
@@ -300,10 +340,10 @@ const cv=document.getElementById("fx"), cx=cv.getContext("2d"); let parts=[], ra
 const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
 function size(){cv.width=innerWidth*devicePixelRatio; cv.height=innerHeight*devicePixelRatio; cx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
 addEventListener("resize",size); size();
-function burst(n){
+function burst(n, x=innerWidth/2, y=innerHeight*.45){
   if(reduce)return;
   const cols=["#ff5c93","#ffb3cc","#d6336c","#ffd166","#ffffff"];
-  for(let i=0;i<n;i++) parts.push({x:innerWidth/2+(Math.random()-.5)*120,y:innerHeight*.45,vx:(Math.random()-.5)*12,vy:-Math.random()*13-3,
+  for(let i=0;i<n;i++) parts.push({x:x+(Math.random()-.5)*120,y,vx:(Math.random()-.5)*12,vy:-Math.random()*13-3,
     s:4+Math.random()*6,c:cols[i%cols.length],r:Math.random()*6,vr:(Math.random()-.5)*.3,heart:Math.random()<.3,life:0});
   if(!raf) raf=requestAnimationFrame(tick);
 }
