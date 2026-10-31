@@ -90,12 +90,16 @@ button:focus-visible{outline:3px solid var(--pink-deep); outline-offset:3px}
 .final h2{font-size:2rem}
 .sign{text-align:right; font-family:var(--display); color:var(--pink-deep); font-size:1.2rem}
 canvas#fx{position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:20}
+.mute{position:fixed; top:max(12px, env(safe-area-inset-top,0px)); right:max(12px, env(safe-area-inset-right,0px)); z-index:30;
+  width:44px; height:44px; border-radius:50%; border:2px solid var(--line); background:var(--card); font-size:1.2rem; line-height:1;
+  box-shadow:0 6px 14px -6px rgba(214,51,108,.5)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
 </style>
 </head>
 <body>
 
 <canvas id="fx"></canvas>
+<button class="mute" id="mute" aria-label="Silenciar sonidos">🔊</button>
 <div class="photos" aria-hidden="true"><div class="grid" id="grid"></div></div>
 <div class="wrap">
   <header>
@@ -153,7 +157,7 @@ function paint(){
 }
 
 function win(){
-  burst(60);
+  burst(60); sfx.win();
   const i=stage;
   card.innerHTML=`<div class="step">Parada ${i+1} de 5</div>
     <h2>¡Ganaste la letra ${NAME[i]}!</h2>
@@ -161,7 +165,7 @@ function win(){
     <div style="flex:1"></div>
     <div><button class="btn" id="next">${i<4?"Seguir el camino":"Ver tu sorpresa"}</button></div>`;
   stage++; paint();
-  document.getElementById("next").onclick = stage<5 ? games[stage] : finale;
+  document.getElementById("next").onclick = ()=>{ sfx.tick(); (stage<5 ? games[stage] : finale)(); };
 }
 function shell(title,text){
   card.innerHTML=`<div class="step">Parada ${stage+1} de 5</div><h2>${title}</h2><p>${text}</p><div class="zone" id="zone"></div>`;
@@ -175,7 +179,7 @@ function g1(){
   for(let k=0;k<5;k++){
     const h=document.createElement("button"); h.className="heart"; h.textContent="💗"; h.setAttribute("aria-label","Corazón");
     h.style.left=(8+Math.random()*72)+"%"; h.style.top=(8+Math.random()*62)+"%"; h.style.animationDelay=(k*.4)+"s";
-    h.onclick=()=>{h.remove(); burst(8); if(--left===0) setTimeout(win,250)};
+    h.onclick=()=>{h.remove(); burst(8); sfx.pop(5-left); if(--left===0) setTimeout(win,250)};
     z.appendChild(h);
   }
 }
@@ -185,7 +189,7 @@ function g2(){
   z.style.flexDirection="column";
   [["Mi gato imaginario",0],["Tú, obviamente",1],["La señora del pan",0]].forEach(([t,ok])=>{
     const b=document.createElement("button"); b.className="opt"; b.textContent=t;
-    b.onclick=()=>{ if(ok) win(); else { b.classList.remove("bad"); void b.offsetWidth; b.classList.add("bad"); b.textContent="Mmm… intenta otra 😏"; } };
+    b.onclick=()=>{ if(ok) win(); else { sfx.bad(); b.classList.remove("bad"); void b.offsetWidth; b.classList.add("bad"); b.textContent="Mmm… intenta otra 😏"; } };
     z.appendChild(b);
   });
 }
@@ -196,7 +200,7 @@ function g3(){
   for(let k=0;k<3;k++){
     const c=document.createElement("button"); c.className="candle"; c.setAttribute("aria-label","Vela encendida");
     c.innerHTML='<div class="flame"></div><div class="stick"></div>';
-    c.onclick=()=>{ if(c.classList.contains("off"))return; c.classList.add("off"); burst(10); if(--left===0) setTimeout(win,400) };
+    c.onclick=()=>{ if(c.classList.contains("off"))return; c.classList.add("off"); burst(10); sfx.blow(); if(--left===0) setTimeout(win,400) };
     z.appendChild(c);
   }
   const t=document.createElement("div"); t.className="cake"; t.textContent="🎂 Pide tu deseo en silencio"; z.appendChild(t);
@@ -207,7 +211,7 @@ function g4(){
   z.style.flexDirection="column";
   z.innerHTML='<div class="meter"><i id="bar"></i></div><button class="btn hold" id="hold">Mantén presionado 💞</button>';
   let v=0, timer=null; const bar=document.getElementById("bar"), b=document.getElementById("hold");
-  const start=e=>{e.preventDefault(); if(timer)return; timer=setInterval(()=>{v=Math.min(100,v+2.5); bar.style.width=v+"%"; if(v>=100){stop(); win();}},40)};
+  const start=e=>{e.preventDefault(); if(timer)return; timer=setInterval(()=>{v=Math.min(100,v+2.5); bar.style.width=v+"%"; if(v%10===0) sfx.fill(v); if(v>=100){stop(); win();}},40)};
   const stop=()=>{clearInterval(timer); timer=null};
   b.addEventListener("pointerdown",start); ["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,stop));
   b.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter")start(e)}); b.addEventListener("keyup",stop);
@@ -222,8 +226,8 @@ function g5(){
   order.forEach(i=>{
     const t=document.createElement("button"); t.className="tile"; t.textContent=NAME[i];
     t.onclick=()=>{
-      if(t.textContent===NAME[pos]){ ans.children[pos].textContent=t.textContent; t.classList.add("used"); pos++; if(pos===5) setTimeout(win,300); }
-      else { t.animate([{transform:"translateX(-5px)"},{transform:"translateX(5px)"},{transform:"none"}],{duration:300}); }
+      if(t.textContent===NAME[pos]){ ans.children[pos].textContent=t.textContent; t.classList.add("used"); sfx.pop(pos); pos++; if(pos===5) setTimeout(win,300); }
+      else { sfx.bad(); t.animate([{transform:"translateX(-5px)"},{transform:"translateX(5px)"},{transform:"none"}],{duration:300}); }
     };
     z.appendChild(t);
   });
@@ -231,7 +235,7 @@ function g5(){
 const games=[g1,g2,g3,g4,g5];
 
 function finale(){
-  burst(160);
+  burst(160); sfx.birthday();
   card.classList.add("final");
   card.innerHTML=`<div class="step">Llegaste al final del camino</div>
     <h2>¡Feliz cumpleaños, mi amor!</h2>
@@ -239,7 +243,7 @@ function finale(){
     <div class="poem">${NAME.map((l,i)=>`<div class="line on"><b>${l}</b><span>${LINES[i]}</span></div>`).join("")}</div>
     <p class="sign">Con amor, Felipe</p>
     <div><button class="btn" id="again">Más confeti 🎉</button></div>`;
-  document.getElementById("again").onclick=()=>burst(120);
+  document.getElementById("again").onclick=()=>{ burst(120); sfx.win(); };
 }
 
 function intro(){
@@ -248,8 +252,48 @@ function intro(){
     <p>Son cinco paradas con juegos cortitos. En cada una ganas una letra, y al final se arma algo que escribí pensando en ti.</p>
     <div class="zone" style="font-size:3.4rem">🎁</div>
     <div><button class="btn" id="go">Empezar el camino</button></div>`;
-  document.getElementById("go").onclick=g1;
+  document.getElementById("go").onclick=()=>{ sfx.tick(); g1(); };
 }
+
+/* sonidos: hechos con Web Audio, sin archivos. El navegador solo deja sonar después del primer toque */
+let ac=null, muted=false;
+try{ muted=localStorage.getItem("mute")==="1" }catch(e){}
+function audio(){ if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==="suspended") ac.resume(); return ac }
+function tone(f, at=0, d=.15, type="sine", vol=.2, f2){
+  if(muted) return;
+  const a=audio(), o=a.createOscillator(), g=a.createGain(), s=a.currentTime+at;
+  o.type=type; o.frequency.setValueAtTime(f,s); if(f2) o.frequency.exponentialRampToValueAtTime(f2,s+d);
+  g.gain.setValueAtTime(.0001,s); g.gain.exponentialRampToValueAtTime(vol,s+.01); g.gain.exponentialRampToValueAtTime(.0001,s+d);
+  o.connect(g).connect(a.destination); o.start(s); o.stop(s+d+.02);
+}
+const sfx={
+  tick:()=>tone(880,0,.06,"triangle",.12),
+  pop:k=>tone(520+k*90,0,.14,"sine",.25,(520+k*90)*2),
+  bad:()=>tone(240,0,.2,"triangle",.18,150),
+  fill:v=>tone(300+v*6,0,.08,"sine",.1),
+  win:()=>[523,659,784,1047].forEach((f,i)=>tone(f,i*.09,.3,"triangle",.18)),
+  blow(){
+    if(muted) return;
+    const a=audio(), n=a.sampleRate*.5, b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0);
+    for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
+    const s=a.createBufferSource(), f=a.createBiquadFilter(), g=a.createGain();
+    s.buffer=b; f.type="bandpass"; f.frequency.setValueAtTime(1800,a.currentTime); f.frequency.exponentialRampToValueAtTime(400,a.currentTime+.5); g.gain.value=.4;
+    s.connect(f).connect(g).connect(a.destination); s.start();
+  },
+  /* "Cumpleaños feliz": [nota, tiempos] */
+  birthday(){
+    const N={G:392,A:440,B:494,C:523,D:587,E:659,F:698,g:784};
+    const song=[["G",.75],["G",.25],["A",1],["G",1],["C",1],["B",2],
+                ["G",.75],["G",.25],["A",1],["G",1],["D",1],["C",2],
+                ["G",.75],["G",.25],["g",1],["E",1],["C",1],["B",1],["A",2],
+                ["F",.75],["F",.25],["E",1],["C",1],["D",1],["C",3]];
+    let t=.6; song.forEach(([n,b])=>{ tone(N[n],t,b*.36,"triangle",.16); t+=b*.38 });
+  }
+};
+const muteBtn=document.getElementById("mute");
+function paintMute(){ muteBtn.textContent=muted?"🔇":"🔊"; muteBtn.setAttribute("aria-label",muted?"Activar sonidos":"Silenciar sonidos") }
+muteBtn.onclick=()=>{ muted=!muted; try{ localStorage.setItem("mute",muted?"1":"0") }catch(e){} paintMute(); sfx.tick() };
+paintMute();
 
 /* confeti */
 const cv=document.getElementById("fx"), cx=cv.getContext("2d"); let parts=[], raf=null;
